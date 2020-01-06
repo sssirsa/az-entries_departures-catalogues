@@ -22,7 +22,6 @@
       "collectionName": "TransportLine",
       "createIfNotExists": false,
       "connectionStringSetting": "connection_cosmosDB",
-      "partitionKey": "{id}",
       "direction": "out"
     }
   ]
