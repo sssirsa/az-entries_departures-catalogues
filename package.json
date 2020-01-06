@@ -1,0 +1,12 @@
+{
+  "name": "catalogues",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "documentdb": "^1.10.0"
+  },
+  "devDependencies": {}
+}
