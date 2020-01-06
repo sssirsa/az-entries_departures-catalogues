@@ -6,7 +6,8 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "documentdb": "^1.10.0"
+    "documentdb": "^1.10.0",
+    "mongodb": "3.x"
   },
   "devDependencies": {}
 }
