@@ -11,94 +11,80 @@ module.exports = function (context, req) {
 
     //Create transport line
     if (req.method === "POST") {
-        var transportLine = context.bindings.transportLine;
-        if (transportLine) {
-            context.res = {
-                status: 422,
-                body: "Transport line already exists.",
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-        }
-        else {
-            var agencyId = req.body['udn_id'];
-            var subsidiaryId = req.body['sucursal_id'];
-            //Transport line object building
-            var newTransportLine = {
-                razon_social: req.body.razon_social,
-                direccion: req.body.direccion,
-                responsable: req.body.responsable
-            };
-            //TODO: get subsidiary or agency from user when not provided
-            if (subsidiaryId) {
-                //Search subsidiary and then add it to transport line object
-                createMongoClient()
-                    .then(function () {
-                        searchSubsidiary(subsidiaryId)
-                            .then(function (subsidiary) {
-                                if (subsidiary) {
-                                    newTransportLine['sucursal'] = subsidiary;
-                                    //Write the transport line to the database
-                                    createCosmosClient()
-                                        .then(function () {
-                                            writeTransportLine(newTransportLine)
-                                                .then(function (transportLine) {
-                                                    context.res = {
-                                                        status: 201,
-                                                        body: transportLine.ops[0]
-                                                    };
-                                                    context.done();
-                                                })
-                                                .catch(function (error) {
-                                                    context.log('Error writing the transport line to the database');
-                                                    context.log(error);
-                                                    context.res = { status: 500, body: error };
-                                                    context.done();
-                                                });
-                                        })
-                                        .catch(function (error) {
-                                            context.log('Error creating cosmos_client for transport line creation ');
-                                            context.log(error);
-                                            context.res = { status: 500, body: error };
-                                            context.done();
-                                        });
-                                }
-                                else {
-                                    context.log('No subsidiary found with the given id')
-                                    context.res = {
-                                        status: 400,
-                                        body: { message: "ES-043" }
-                                    };
-                                    context.done();
-                                }
-                            })
-                            .catch(function (error) {
-                                context.log('Error searching subsidiary');
-                                context.log(error);
-                                context.res = { status: 500, body: error };
+        var agencyId = req.body['udn_id'];
+        var subsidiaryId = req.body['sucursal_id'];
+        //Transport line object building
+        var newTransportLine = {
+            razon_social: req.body.razon_social,
+            direccion: req.body.direccion,
+            responsable: req.body.responsable
+        };
+        //TODO: get subsidiary or agency from user when not provided
+        if (subsidiaryId) {
+            //Search subsidiary and then add it to transport line object
+            createMongoClient()
+                .then(function () {
+                    searchSubsidiary(subsidiaryId)
+                        .then(function (subsidiary) {
+                            if (subsidiary) {
+                                newTransportLine['sucursal'] = subsidiary;
+                                //Write the transport line to the database
+                                createCosmosClient()
+                                    .then(function () {
+                                        writeTransportLine(newTransportLine)
+                                            .then(function (transportLine) {
+                                                context.res = {
+                                                    status: 201,
+                                                    body: transportLine.ops[0]
+                                                };
+                                                context.done();
+                                            })
+                                            .catch(function (error) {
+                                                context.log('Error writing the transport line to the database');
+                                                context.log(error);
+                                                context.res = { status: 500, body: error };
+                                                context.done();
+                                            });
+                                    })
+                                    .catch(function (error) {
+                                        context.log('Error creating cosmos_client for transport line creation ');
+                                        context.log(error);
+                                        context.res = { status: 500, body: error };
+                                        context.done();
+                                    });
+                            }
+                            else {
+                                context.log('No subsidiary found with the given id')
+                                context.res = {
+                                    status: 400,
+                                    body: { message: "ES-043" }
+                                };
                                 context.done();
-                            });
-                    })
-                    .catch(function (error) {
-                        context.log('Error creating mongo_client for subsidiary search');
-                        context.log(error);
-                        context.res = { status: 500, body: error };
-                        context.done();
-                    });
+                            }
+                        })
+                        .catch(function (error) {
+                            context.log('Error searching subsidiary');
+                            context.log(error);
+                            context.res = { status: 500, body: error };
+                            context.done();
+                        });
+                })
+                .catch(function (error) {
+                    context.log('Error creating mongo_client for subsidiary search');
+                    context.log(error);
+                    context.res = { status: 500, body: error };
+                    context.done();
+                });
 
-            }
-            if (agencyId) {
-                //TODO: Develop agency search functionality
-                //writeTransportLine(JSON.stringify(newTransportLine));
-            }
-
+        }
+        if (agencyId) {
+            //TODO: Develop agency search functionality
+            //writeTransportLine(JSON.stringify(newTransportLine));
         }
     }
 
-    //Get entries
+    //Get transport lines
     if (req.method === "GET") {
-        //TODO: Add filter for returning just the NEW FRIDGES entries
         var requestedID;
         if (req.query) {
             requestedID = req.query["id"];
@@ -153,6 +139,47 @@ module.exports = function (context, req) {
                     context.res = { status: 500, body: error };
                     context.done();
                 });
+        }
+    }
+
+    //Delete transport line
+    if (req.method === "DELETE") {
+        var requestedID;
+        if (req.query) {
+            requestedID = req.query["id"];
+        }
+        if (requestedID) {
+            //Search for one transport line
+            createCosmosClient()
+                .then(function () {
+                    deleteTransportLine(requestedID)
+                        .then(function (transportLine) {
+                            context.res = {
+                                status: 204,
+                                body: {}
+                            };
+                            context.done();
+                        })
+                        .catch(function (error) {
+                            context.log('Error deleting transport line from database');
+                            context.log(error);
+                            context.res = { status: 500, body: error };
+                            context.done();
+                        });
+                })
+                .catch(function (error) {
+                    context.log('Error creating cosmos_client for transport line deletion');
+                    context.log(error);
+                    context.res = { status: 500, body: error };
+                    context.done();
+                });
+        }
+        else {
+            context.res = {
+                status: 400,
+                body:'The parameter "id" was not found on the request'
+            };
+            context.done();
         }
     }
 
@@ -245,12 +272,28 @@ module.exports = function (context, req) {
                 .db('EntriesDepartures')
                 .collection('TransportLine')
                 .find()
-                .toArray(function(error, docs){
-                    if(error){
+                .toArray(function (error, docs) {
+                    if (error) {
                         reject(error);
                     }
                     resolve(docs)
                 });
+        });
+    }
+
+    function deleteTransportLine(transportLineId) {
+        return new Promise(function (resolve, reject) {
+            cosmos_client
+                .db('EntriesDepartures')
+                .collection('TransportLine')
+                .deleteOne({ _id: mongodb.ObjectId(transportLineId) },
+                    function (error, docs) {
+                        if (error) {
+                            reject(error);
+                        }
+                        resolve(docs);
+                    }
+                );
         });
     }
 
