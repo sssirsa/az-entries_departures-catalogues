@@ -7,8 +7,6 @@ const connection_mongoDB = process.env["connection_mongoDB"];
 const connection_cosmosDB = process.env["connection_cosmosDB"];
 
 module.exports = function (context, req) {
-    context.log('JavaScript HTTP trigger function processed a request.');
-
     //Create transport line
     if (req.method === "POST") {
         var agencyId = req.body['udn_id'];
@@ -118,7 +116,7 @@ module.exports = function (context, req) {
         else {
             createCosmosClient()
                 .then(function () {
-                    getTransportLines(newTransportLine)
+                    getTransportLines()
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
@@ -134,7 +132,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport line detail');
+                    context.log('Error creating cosmos_client for transport line list');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -153,7 +151,7 @@ module.exports = function (context, req) {
             createCosmosClient()
                 .then(function () {
                     deleteTransportLine(requestedID)
-                        .then(function (transportLine) {
+                        .then(function () {
                             context.res = {
                                 status: 204,
                                 body: {}
@@ -266,12 +264,12 @@ module.exports = function (context, req) {
         });
     }
 
-    function getTransportLines() {
+    function getTransportLines(query) {
         return new Promise(function (resolve, reject) {
             cosmos_client
                 .db('EntriesDepartures')
                 .collection('TransportLine')
-                .find()
+                .find(query)
                 .toArray(function (error, docs) {
                     if (error) {
                         reject(error);
