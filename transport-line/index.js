@@ -4,7 +4,7 @@ const mongodb = require('mongodb');
 let mongo_client = null;
 let cosmos_client = null;
 const connection_mongoDB = "mongodb+srv://lalo:7EXlGBwqcI4u71ZQ@prueba-nztlg.mongodb.net/sssirsa?retryWrites=true&w=majority";
-connection_cosmosDB= "mongodb://sssirsa-entriesdepartures-db-de:K8LIx862ukaHRhDjRtxEV3CK5ixBKn916sBC4vlclhgsVFDunmXDemrSaiVOUx0oGoOrxrCUBh6wi2SOToRtHg%3D%3D@sssirsa-entriesdepartures-db-de.documents.azure.com:10255/?ssl=true";
+connection_cosmosDB = "mongodb://sssirsa-entriesdepartures-db-de:K8LIx862ukaHRhDjRtxEV3CK5ixBKn916sBC4vlclhgsVFDunmXDemrSaiVOUx0oGoOrxrCUBh6wi2SOToRtHg%3D%3D@sssirsa-entriesdepartures-db-de.documents.azure.com:10255/?ssl=true";
 
 module.exports = function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
@@ -24,12 +24,13 @@ module.exports = function (context, req) {
         else {
             var agencyId = req.body['udn_id'];
             var subsidiaryId = req.body['sucursal_id'];
+            //Transport line object building
             var newTransportLine = {
-                id: new mongodb.ObjectID(),
                 razon_social: req.body.razon_social,
                 direccion: req.body.direccion,
                 responsable: req.body.responsable
             };
+            //TODO: get subsidiary or agency from user when not provided
             if (subsidiaryId) {
                 //Search subsidiary and then add it to transport line object
                 createMongoClient()
@@ -57,7 +58,7 @@ module.exports = function (context, req) {
                                                 });
                                         })
                                         .catch(function (error) {
-                                            context.log('Error creating mongoclient for transport line creation ');
+                                            context.log('Error creating cosmos_client for transport line creation ');
                                             context.log(error);
                                             context.res = { status: 500, body: error };
                                             context.done();
@@ -80,7 +81,7 @@ module.exports = function (context, req) {
                             });
                     })
                     .catch(function (error) {
-                        context.log('Error creating mongoclient for subsidiary search');
+                        context.log('Error creating mongo_client for subsidiary search');
                         context.log(error);
                         context.res = { status: 500, body: error };
                         context.done();
@@ -91,10 +92,6 @@ module.exports = function (context, req) {
                 //TODO: Develop agency search functionality
                 //writeTransportLine(JSON.stringify(newTransportLine));
             }
-            // else {
-            //     //TODO: get subsidiary or agency from user when not provided
-            //     return writeTransportLine(JSON.stringify(newTransportLine));
-            // }
 
         }
     }
@@ -107,24 +104,55 @@ module.exports = function (context, req) {
             requestedID = req.query["id"];
         }
         if (requestedID) {
-            var entry = context.bindings.entry;
-            context.res = {
-                status: 200,
-                body: entry,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
+            //Search for one transport line
+            createCosmosClient()
+                .then(function () {
+                    getTransportLine(requestedID)
+                        .then(function (transportLine) {
+                            context.res = {
+                                status: 200,
+                                body: transportLine
+                            };
+                            context.done();
+                        })
+                        .catch(function (error) {
+                            context.log('Error reading transport line from database');
+                            context.log(error);
+                            context.res = { status: 500, body: error };
+                            context.done();
+                        });
+                })
+                .catch(function (error) {
+                    context.log('Error creating cosmos_client for transport line detail');
+                    context.log(error);
+                    context.res = { status: 500, body: error };
+                    context.done();
+                });
         }
         else {
-            var entries = context.bindings.entries;
-            context.res = {
-                status: 200,
-                body: entries,
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
+            createCosmosClient()
+                .then(function () {
+                    getTransportLines(newTransportLine)
+                        .then(function (transportLine) {
+                            context.res = {
+                                status: 200,
+                                body: transportLine
+                            };
+                            context.done();
+                        })
+                        .catch(function (error) {
+                            context.log('Error reading transport line from database');
+                            context.log(error);
+                            context.res = { status: 500, body: error };
+                            context.done();
+                        });
+                })
+                .catch(function (error) {
+                    context.log('Error creating cosmos_client for transport line detail');
+                    context.log(error);
+                    context.res = { status: 500, body: error };
+                    context.done();
+                });
         }
     }
 
@@ -176,7 +204,7 @@ module.exports = function (context, req) {
                     }
                 );
         });
-    };
+    }
 
     function writeTransportLine(transportLine) {
         // Write the entry to the database.
@@ -192,6 +220,37 @@ module.exports = function (context, req) {
                         resolve(docs);
                     }
                 );
+        });
+    }
+
+    function getTransportLine(transportLineId) {
+        return new Promise(function (resolve, reject) {
+            cosmos_client
+                .db('EntriesDepartures')
+                .collection('TransportLine')
+                .findOne({ _id: mongodb.ObjectId(transportLineId) },
+                    function (error, docs) {
+                        if (error) {
+                            reject(error);
+                        }
+                        resolve(docs);
+                    }
+                );
+        });
+    }
+
+    function getTransportLines() {
+        return new Promise(function (resolve, reject) {
+            cosmos_client
+                .db('EntriesDepartures')
+                .collection('TransportLine')
+                .find()
+                .toArray(function(error, docs){
+                    if(error){
+                        reject(error);
+                    }
+                    resolve(docs)
+                });
         });
     }
 
