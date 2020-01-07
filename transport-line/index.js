@@ -33,7 +33,10 @@ module.exports = function (context, req) {
                                             .then(function (transportLine) {
                                                 context.res = {
                                                     status: 201,
-                                                    body: transportLine.ops[0]
+                                                    body: transportLine.ops[0],
+                                                    headers:{
+                                                        'Content-Type':'application/json'
+                                                    }
                                                 };
                                                 context.done();
                                             })
@@ -55,7 +58,10 @@ module.exports = function (context, req) {
                                 context.log('No subsidiary found with the given id')
                                 context.res = {
                                     status: 400,
-                                    body: { message: "ES-043" }
+                                    body: { message: "ES-043" },
+                                    headers:{
+                                        'Content-Type':'application/json'
+                                    }
                                 };
                                 context.done();
                             }
@@ -95,7 +101,10 @@ module.exports = function (context, req) {
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
-                                body: transportLine
+                                body: transportLine,
+                                headers:{
+                                    'Content-Type':'application/json'
+                                }
                             };
                             context.done();
                         })
@@ -120,7 +129,10 @@ module.exports = function (context, req) {
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
-                                body: transportLine
+                                body: transportLine,
+                                headers:{
+                                    'Content-Type':'application/json'
+                                }
                             };
                             context.done();
                         })

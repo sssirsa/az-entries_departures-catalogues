@@ -1,9 +1,6 @@
 const mongodb = require('mongodb');
 
-//Mongodb connection
-let mongo_client = null;
 let cosmos_client = null;
-const connection_mongoDB = process.env["connection_mongoDB"];
 const connection_cosmosDB = process.env["connection_cosmosDB"];
 
 module.exports = function (context, req) {
@@ -28,7 +25,10 @@ module.exports = function (context, req) {
                                             .then(function (transportKind) {
                                                 context.res = {
                                                     status: 201,
-                                                    body: transportKind.ops[0]
+                                                    body: transportKind.ops[0],
+                                                    headers:{
+                                                        'Content-Type':'application/json'
+                                                    }
                                                 };
                                                 context.done();
                                             })
@@ -50,7 +50,10 @@ module.exports = function (context, req) {
                                 context.log('No transport line found with the given id')
                                 context.res = {
                                     status: 400,
-                                    body: { message: "ES-044" }
+                                    body: { message: "ES-044" },
+                                    headers:{
+                                        'Content-Type':'application/json'
+                                    }
                                 };
                                 context.done();
                             }
@@ -75,10 +78,10 @@ module.exports = function (context, req) {
     //Get transport lines
     if (req.method === "GET") {
         var requestedID;
-        var requestedSubsidiary;
-        var requestedAgency;
+        var filter;
         if (req.query) {
             requestedID = req.query["id"];
+            requestedfilter = req.query["filter"];
         }
         if (requestedID) {
             //Search for one transport line
@@ -88,7 +91,10 @@ module.exports = function (context, req) {
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
-                                body: transportLine
+                                body: transportLine,
+                                headers:{
+                                    'Content-Type':'application/json'
+                                }
                             };
                             context.done();
                         })
@@ -109,11 +115,14 @@ module.exports = function (context, req) {
         else {
             createCosmosClient()
                 .then(function () {
-                    getTransportKinds()
+                    getTransportKinds(requestedfilter)
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
-                                body: transportLine
+                                body: transportLine,
+                                headers:{
+                                    'Content-Type':'application/json'
+                                }
                             };
                             context.done();
                         })
