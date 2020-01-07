@@ -3,8 +3,8 @@ const mongodb = require('mongodb');
 //Mongodb connection
 let mongo_client = null;
 let cosmos_client = null;
-const connection_mongoDB = "mongodb+srv://lalo:7EXlGBwqcI4u71ZQ@prueba-nztlg.mongodb.net/sssirsa?retryWrites=true&w=majority";
-connection_cosmosDB = "mongodb://sssirsa-entriesdepartures-db-de:K8LIx862ukaHRhDjRtxEV3CK5ixBKn916sBC4vlclhgsVFDunmXDemrSaiVOUx0oGoOrxrCUBh6wi2SOToRtHg%3D%3D@sssirsa-entriesdepartures-db-de.documents.azure.com:10255/?ssl=true";
+const connection_mongoDB = process.env["connection_mongoDB"];
+const connection_cosmosDB = process.env["connection_cosmosDB"];
 
 module.exports = function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
