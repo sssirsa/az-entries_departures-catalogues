@@ -1,17 +1,17 @@
 const mongodb = require('mongodb');
+// const fs = require('fs');
+// const b64toBlob = require('b64-to-blob');
 
 let cosmos_client = null;
 
 const connection_cosmosDB = process.env["connection_cosmosDB"];
-const connection_storage = process.env["storageentriesdepartures_STORAGE"];
+const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
-const {
 
-    StorageSharedKeyCredential,
+const STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+const ACCOUNT_ACCESS_KEY = process.env.AZURE_STORAGE_ACCOUNT_ACCESS_KEY;
 
-    BlobServiceClient
-
-} = require('@azure/storage-blob');
+const ONE_MINUTE = 60 * 1000;
 
 module.exports = function (context, req) {
     //Create transport kind
@@ -303,20 +303,58 @@ module.exports = function (context, req) {
         });
     }
 
-    async function writeBlob(base64Image) {
-        //TODO:Create blob file from base64 string
-        //TODO: Get the file format and size from the blob file
-        fileFormat = 'png';
-        fileSize=base64Image.length;
-        const blobServiceClient = await BlobServiceClient.fromConnectionString(connection_storage);
-        context.log('Obtained blob service client');
-        const containerClient = await blobServiceClient.getContainerClient('driver-id');
-        const blobName = 'driver-id' + new mongodb.ObjectID() + '.' + fileFormat;
-        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-        const uploadBlobResponse = await blockBlobClient.upload(base64Image, base64Image.length);
-        context.log('Blob successfully created');
-        context.log(uploadBlobResponse);
-        context.done();
+    async function writeBlob(base64String) {
+        //Local imports
+        const {
+            StorageSharedKeyCredential,
+            BlobServiceClient
+        } = require('@azure/storage-blob');
+        global.atob = require('atob');
+        global.Blob = require('node-blob');
+        const b64toBlob = require('b64-to-blob');
+        const { AbortController } = require('@azure/abort-controller');
+        const containerName = 'driver-id';
+
+        var credentials = new StorageSharedKeyCredential(STORAGE_ACCOUNT_NAME, ACCOUNT_ACCESS_KEY);
+        var base64Data = base64String.split(';base64,').pop();
+        var contentType = base64String.split(';base64,').shift().replace('data:', '');
+        var fileFormat = contentType.split('/').pop();
+        var fileSize = getFileSizeByBase64String(base64Data);
+        var blobName = containerName + new mongodb.ObjectID() + '.' + fileFormat;
+
+        var blobImage = b64toBlob(base64Data, contentType);
+        var storageUrl = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`;
+
+        //var blobServiceClient = new BlobServiceClient(storageUrl, credentials);
+        var blobServiceClient = await BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+        var containerClient = await blobServiceClient.getContainerClient(containerName);
+
+        var blobClient = await containerClient.getBlobClient(blobName);
+        var blockBlobClient = await blobClient.getBlockBlobClient();
+        var aborter = AbortController.timeout(10 * ONE_MINUTE);
+
+        try {
+            await blockBlobClient.upload(blobImage.buffer, blobImage.size, aborter);
+
+            //var content = "Hello";
+            //await blockBlobClient.upload(content, content.length, aborter);
+            context.done();
+        }
+        catch (e) {
+            context.log(e);
+            context.res = {
+                status: 500
+            };
+            context.done();
+        }
     }
+
+    function getFileSizeByBase64String(base64String) {
+        var y;
+        base64String.endsWith('==') ? y = 2 : y = 1;
+        var fileSize = (base64String.length * (3 / 4)) - y;
+        return fileSize;
+    }
+
 
 };
