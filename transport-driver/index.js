@@ -5,6 +5,14 @@ let cosmos_client = null;
 const connection_cosmosDB = process.env["connection_cosmosDB"];
 const connection_storage = process.env["storageentriesdepartures_STORAGE"];
 
+const {
+
+    StorageSharedKeyCredential,
+
+    BlobServiceClient
+
+} = require('@azure/storage-blob');
+
 module.exports = function (context, req) {
     //Create transport kind
     if (req.method === "POST") {
@@ -17,79 +25,78 @@ module.exports = function (context, req) {
             identificacion_anverso: null,
             identificacion_reverso: null
         };
+        writeBlob(idFront);
         //Rejecting the request if the minimum fields are not received
-        if (!transportLineId || !idFront || !newTransportDriver.nombre) {
-            context.res = {
-                status: 400,
-                body: 'Required fields: "nombre", "linea_transporte_id", "identificacion_anverso" ',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-            context.done();
-        }
-        //Search transport line and then add it to transport line object
-        createCosmosClient()
-            .then(function () {
-                searchTransportLine(transportLineId)
-                    .then(function (transportLine) {
-                        if (transportLine) {
-                            newTransportDriver['linea_transporte'] = transportLine;
-                            //Write the transport line to the database
-                            createCosmosClient()
-                                .then(function () {
-                                    writeTransportDriver(newTransportDriver)
-                                        .then(function (transportDriver) {
-                                            context.res = {
-                                                status: 201,
-                                                body: transportDriver.ops[0],
-                                                headers: {
-                                                    'Content-Type': 'application/json'
-                                                }
-                                            };
-                                            context.done();
-                                        })
-                                        .catch(function (error) {
-                                            context.log('Error writing the transport driver to the database');
-                                            context.log(error);
-                                            context.res = { status: 500, body: error };
-                                            context.done();
-                                        });
-                                })
-                                .catch(function (error) {
-                                    context.log('Error creating cosmos_client for transport driver creation');
-                                    context.log(error);
-                                    context.res = { status: 500, body: error };
-                                    context.done();
-                                });
-                        }
-                        else {
-                            context.log('No transport line found with the given id')
-                            context.res = {
-                                status: 400,
-                                body: { message: "ES-044" },
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            };
-                            context.done();
-                        }
-                    })
-                    .catch(function (error) {
-                        context.log('Error searching transport line');
-                        context.log(error);
-                        context.res = { status: 500, body: error };
-                        context.done();
-                    });
-            })
-            .catch(function (error) {
-                context.log('Error creating cosmos_client for transport line search');
-                context.log(error);
-                context.res = { status: 500, body: error };
-                context.done();
-            });
-
-
+        // if (!transportLineId || !idFront || !newTransportDriver.nombre) {
+        //     context.res = {
+        //         status: 400,
+        //         body: 'Required fields: "nombre", "linea_transporte_id", "identificacion_anverso" ',
+        //         headers: {
+        //             'Content-Type': 'application/json'
+        //         }
+        //     };
+        //     context.done();
+        // }
+        // //Search transport line and then add it to transport line object
+        // createCosmosClient()
+        //     .then(function () {
+        //         searchTransportLine(transportLineId)
+        //             .then(function (transportLine) {
+        //                 if (transportLine) {
+        //                     newTransportDriver['linea_transporte'] = transportLine;
+        //                     //Write the transport line to the database
+        //                     createCosmosClient()
+        //                         .then(function () {
+        //                             writeTransportDriver(newTransportDriver)
+        //                                 .then(function (transportDriver) {
+        //                                     context.res = {
+        //                                         status: 201,
+        //                                         body: transportDriver.ops[0],
+        //                                         headers: {
+        //                                             'Content-Type': 'application/json'
+        //                                         }
+        //                                     };
+        //                                     context.done();
+        //                                 })
+        //                                 .catch(function (error) {
+        //                                     context.log('Error writing the transport driver to the database');
+        //                                     context.log(error);
+        //                                     context.res = { status: 500, body: error };
+        //                                     context.done();
+        //                                 });
+        //                         })
+        //                         .catch(function (error) {
+        //                             context.log('Error creating cosmos_client for transport driver creation');
+        //                             context.log(error);
+        //                             context.res = { status: 500, body: error };
+        //                             context.done();
+        //                         });
+        //                 }
+        //                 else {
+        //                     context.log('No transport line found with the given id')
+        //                     context.res = {
+        //                         status: 400,
+        //                         body: { message: "ES-044" },
+        //                         headers: {
+        //                             'Content-Type': 'application/json'
+        //                         }
+        //                     };
+        //                     context.done();
+        //                 }
+        //             })
+        //             .catch(function (error) {
+        //                 context.log('Error searching transport line');
+        //                 context.log(error);
+        //                 context.res = { status: 500, body: error };
+        //                 context.done();
+        //             });
+        //     })
+        //     .catch(function (error) {
+        //         context.log('Error creating cosmos_client for transport line search');
+        //         context.log(error);
+        //         context.res = { status: 500, body: error };
+        //         context.done();
+        //     });
     }
 
     //Get transport lines
@@ -296,9 +303,20 @@ module.exports = function (context, req) {
         });
     }
 
-    function writeBlob(base64Image) {
-        //const blobServiceClient = await BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
-
+    async function writeBlob(base64Image) {
+        //TODO:Create blob file from base64 string
+        //TODO: Get the file format and size from the blob file
+        fileFormat = 'png';
+        fileSize=base64Image.length;
+        const blobServiceClient = await BlobServiceClient.fromConnectionString(connection_storage);
+        context.log('Obtained blob service client');
+        const containerClient = await blobServiceClient.getContainerClient('driver-id');
+        const blobName = 'driver-id' + new mongodb.ObjectID() + '.' + fileFormat;
+        const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+        const uploadBlobResponse = await blockBlobClient.upload(base64Image, base64Image.length);
+        context.log('Blob successfully created');
+        context.log(uploadBlobResponse);
+        context.done();
     }
 
 };
