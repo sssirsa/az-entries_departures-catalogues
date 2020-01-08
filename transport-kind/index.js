@@ -154,8 +154,7 @@ module.exports = function (context, req) {
                     deleteTransportKind(requestedID)
                         .then(function () {
                             context.res = {
-                                status: 204,
-                                body: {}
+                                status: 204
                             };
                             context.done();
                         })
