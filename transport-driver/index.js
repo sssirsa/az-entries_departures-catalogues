@@ -356,7 +356,7 @@ module.exports = function (context, req) {
             return storageUrl + '/' + containerName + '/' + blobName;
         }
         catch (e) {
-            throw new Error(500);
+            throw new Error(e);
         }
     }
 
