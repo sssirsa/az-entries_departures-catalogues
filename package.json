@@ -6,8 +6,13 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.0.0",
+    "atob": "^2.1.2",
+    "b64-to-blob": "^1.2.19",
+    "based-blob": "^1.0.1",
     "documentdb": "^1.10.0",
-    "mongodb": "3.x"
+    "mongodb": "3.x",
+    "node-blob": "0.0.2"
   },
   "devDependencies": {}
 }

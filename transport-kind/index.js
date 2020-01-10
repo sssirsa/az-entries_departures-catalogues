@@ -11,14 +11,14 @@ module.exports = function (context, req) {
         var newTransportKind = {
             descripcion: req.body.descripcion
         };
-            //Search transport line and then add it to transport line object
+            //Search transport line and then add it to transport kind object
             createCosmosClient()
                 .then(function () {
                     searchTransportLine(transportLineId)
                         .then(function (transportLine) {
                             if (transportLine) {
                                 newTransportKind['linea_transporte'] = transportLine;
-                                //Write the transport line to the database
+                                //Write the transport kind to the database
                                 createCosmosClient()
                                     .then(function () {
                                         writeTransportKind(newTransportKind)
@@ -66,7 +66,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating mongo_client for transport line search');
+                    context.log('Error creating cosmos_client for transport line search');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -75,16 +75,16 @@ module.exports = function (context, req) {
         
     }
 
-    //Get transport lines
+    //Get transport kinds
     if (req.method === "GET") {
         var requestedID;
         var filter;
         if (req.query) {
             requestedID = req.query["id"];
-            requestedfilter = req.query["filter"];
+            filter = req.query["filter"];
         }
         if (requestedID) {
-            //Search for one transport line
+            //Search for one transport kind
             createCosmosClient()
                 .then(function () {
                     getTransportKind(requestedID)
@@ -115,7 +115,7 @@ module.exports = function (context, req) {
         else {
             createCosmosClient()
                 .then(function () {
-                    getTransportKinds(requestedfilter)
+                    getTransportKinds(filter)
                         .then(function (transportLine) {
                             context.res = {
                                 status: 200,
@@ -142,21 +142,19 @@ module.exports = function (context, req) {
         }
     }
 
-    //Delete transport line
+    //Delete transport kind
     if (req.method === "DELETE") {
         var requestedID;
         if (req.query) {
             requestedID = req.query["id"];
         }
         if (requestedID) {
-            //Search for one transport line
             createCosmosClient()
                 .then(function () {
                     deleteTransportKind(requestedID)
                         .then(function () {
                             context.res = {
-                                status: 204,
-                                body: {}
+                                status: 204
                             };
                             context.done();
                         })
