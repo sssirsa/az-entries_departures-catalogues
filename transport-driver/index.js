@@ -1,6 +1,4 @@
 const mongodb = require('mongodb');
-// const fs = require('fs');
-// const b64toBlob = require('b64-to-blob');
 
 let cosmos_client = null;
 
@@ -50,14 +48,14 @@ module.exports = function (context, req) {
             if (idRear) {
                 newTransportDriver['identificacion_reverso'] = await writeBlob(idRear);
             }
-            //Search transport line and then add it to transport line object
+            //Search transport line and then add it to transport driver object
             createCosmosClient()
                 .then(function () {
                     searchTransportLine(transportLineId)
                         .then(function (transportLine) {
                             if (transportLine) {
                                 newTransportDriver['linea_transporte'] = transportLine;
-                                //Write the transport line to the database
+                                //Write the transport driver to the database
                                 createCosmosClient()
                                     .then(function () {
                                         writeTransportDriver(newTransportDriver)
@@ -133,7 +131,7 @@ module.exports = function (context, req) {
             filter = req.query["filter"];
         }
         if (requestedID) {
-            //Search for one transport line
+            //Search for one transport driver
             createCosmosClient()
                 .then(function () {
                     getTransportDriver(requestedID)
@@ -191,7 +189,7 @@ module.exports = function (context, req) {
         }
     }
 
-    //Delete transport line
+    //Delete transport driver
     if (req.method === "DELETE") {
         var requestedID;
         if (req.query) {
