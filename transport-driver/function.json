@@ -15,13 +15,6 @@
       "type": "http",
       "direction": "out",
       "name": "res"
-    },
-    {
-      "type": "blob",
-      "direction": "out",
-      "name": "outputBlob",
-      "path": "driver-id/{rand-guid}",
-      "connection": "storageentriesdepartures_STORAGE"
     }
   ]
 }

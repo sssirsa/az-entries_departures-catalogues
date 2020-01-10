@@ -9,13 +9,21 @@ const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STR
 
 
 const STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
-const ACCOUNT_ACCESS_KEY = process.env.AZURE_STORAGE_ACCOUNT_ACCESS_KEY;
-
 const ONE_MINUTE = 60 * 1000;
 
 module.exports = function (context, req) {
-    //Create transport kind
-    if (req.method === "POST") {
+
+    switch (req.method) {
+        case "POST":
+            post_TransportDriver();
+            break;
+        case "GET":
+            get_TransportDriver();
+            break;
+    }
+
+    //Create transport driver
+    async function post_TransportDriver() {
         var transportLineId = req.body['linea_transporte_id'];
         var idFront = req.body['identificacion_anverso'];
         var idRear = req.body['identificacion_reverso'];
@@ -25,82 +33,99 @@ module.exports = function (context, req) {
             identificacion_anverso: null,
             identificacion_reverso: null
         };
-        writeBlob(idFront);
-        //Rejecting the request if the minimum fields are not received
-        // if (!transportLineId || !idFront || !newTransportDriver.nombre) {
-        //     context.res = {
-        //         status: 400,
-        //         body: 'Required fields: "nombre", "linea_transporte_id", "identificacion_anverso" ',
-        //         headers: {
-        //             'Content-Type': 'application/json'
-        //         }
-        //     };
-        //     context.done();
-        // }
-        // //Search transport line and then add it to transport line object
-        // createCosmosClient()
-        //     .then(function () {
-        //         searchTransportLine(transportLineId)
-        //             .then(function (transportLine) {
-        //                 if (transportLine) {
-        //                     newTransportDriver['linea_transporte'] = transportLine;
-        //                     //Write the transport line to the database
-        //                     createCosmosClient()
-        //                         .then(function () {
-        //                             writeTransportDriver(newTransportDriver)
-        //                                 .then(function (transportDriver) {
-        //                                     context.res = {
-        //                                         status: 201,
-        //                                         body: transportDriver.ops[0],
-        //                                         headers: {
-        //                                             'Content-Type': 'application/json'
-        //                                         }
-        //                                     };
-        //                                     context.done();
-        //                                 })
-        //                                 .catch(function (error) {
-        //                                     context.log('Error writing the transport driver to the database');
-        //                                     context.log(error);
-        //                                     context.res = { status: 500, body: error };
-        //                                     context.done();
-        //                                 });
-        //                         })
-        //                         .catch(function (error) {
-        //                             context.log('Error creating cosmos_client for transport driver creation');
-        //                             context.log(error);
-        //                             context.res = { status: 500, body: error };
-        //                             context.done();
-        //                         });
-        //                 }
-        //                 else {
-        //                     context.log('No transport line found with the given id')
-        //                     context.res = {
-        //                         status: 400,
-        //                         body: { message: "ES-044" },
-        //                         headers: {
-        //                             'Content-Type': 'application/json'
-        //                         }
-        //                     };
-        //                     context.done();
-        //                 }
-        //             })
-        //             .catch(function (error) {
-        //                 context.log('Error searching transport line');
-        //                 context.log(error);
-        //                 context.res = { status: 500, body: error };
-        //                 context.done();
-        //             });
-        //     })
-        //     .catch(function (error) {
-        //         context.log('Error creating cosmos_client for transport line search');
-        //         context.log(error);
-        //         context.res = { status: 500, body: error };
-        //         context.done();
-        //     });
+        try {
+            //Rejecting the request if the minimum fields are not received
+            if (!transportLineId || !idFront || !newTransportDriver.nombre) {
+                context.res = {
+                    status: 400,
+                    body: 'Required fields: "nombre", "linea_transporte_id", "identificacion_anverso" ',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                context.done();
+            }
+            //Write files to the storage
+            newTransportDriver['identificacion_anverso'] = await writeBlob(idFront);
+            if (idRear) {
+                newTransportDriver['identificacion_reverso'] = await writeBlob(idRear);
+            }
+            //Search transport line and then add it to transport line object
+            createCosmosClient()
+                .then(function () {
+                    searchTransportLine(transportLineId)
+                        .then(function (transportLine) {
+                            if (transportLine) {
+                                newTransportDriver['linea_transporte'] = transportLine;
+                                //Write the transport line to the database
+                                createCosmosClient()
+                                    .then(function () {
+                                        writeTransportDriver(newTransportDriver)
+                                            .then(function (transportDriver) {
+                                                context.res = {
+                                                    status: 201,
+                                                    body: transportDriver.ops[0],
+                                                    headers: {
+                                                        'Content-Type': 'application/json'
+                                                    }
+                                                };
+                                                context.done();
+                                            })
+                                            .catch(function (error) {
+                                                context.log('Error writing the transport driver to the database');
+                                                context.log(error);
+                                                context.res = { status: 500, body: error };
+                                                context.done();
+                                            });
+                                    })
+                                    .catch(function (error) {
+                                        context.log('Error creating cosmos_client for transport driver creation');
+                                        context.log(error);
+                                        context.res = { status: 500, body: error };
+                                        context.done();
+                                    });
+                            }
+                            else {
+                                context.log('No transport line found with the given id')
+                                context.res = {
+                                    status: 400,
+                                    body: { message: "ES-044" },
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                };
+                                context.done();
+                            }
+                        })
+                        .catch(function (error) {
+                            context.log('Error searching transport line');
+                            context.log(error);
+                            context.res = { status: 500, body: error };
+                            context.done();
+                        });
+                })
+                .catch(function (error) {
+                    context.log('Error creating cosmos_client for transport line search');
+                    context.log(error);
+                    context.res = { status: 500, body: error };
+                    context.done();
+                });
+        }
+        catch (error) {
+            context.log('Error while writting the driver-id files to the storage');
+            context.res = {
+                status: 500,
+                body: error,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+            context.done();
+        }
     }
 
-    //Get transport lines
-    if (req.method === "GET") {
+    //Get transport drivers
+    async function get_TransportDriver() {
         var requestedID;
         var filter;
         if (req.query) {
@@ -306,7 +331,6 @@ module.exports = function (context, req) {
     async function writeBlob(base64String) {
         //Local imports
         const {
-            StorageSharedKeyCredential,
             BlobServiceClient
         } = require('@azure/storage-blob');
         global.atob = require('atob');
@@ -315,46 +339,27 @@ module.exports = function (context, req) {
         const { AbortController } = require('@azure/abort-controller');
         const containerName = 'driver-id';
 
-        var credentials = new StorageSharedKeyCredential(STORAGE_ACCOUNT_NAME, ACCOUNT_ACCESS_KEY);
         var base64Data = base64String.split(';base64,').pop();
         var contentType = base64String.split(';base64,').shift().replace('data:', '');
         var fileFormat = contentType.split('/').pop();
-        var fileSize = getFileSizeByBase64String(base64Data);
         var blobName = containerName + new mongodb.ObjectID() + '.' + fileFormat;
-
-        var blobImage = b64toBlob(base64Data, contentType);
         var storageUrl = `https://${STORAGE_ACCOUNT_NAME}.blob.core.windows.net`;
 
-        //var blobServiceClient = new BlobServiceClient(storageUrl, credentials);
-        var blobServiceClient = await BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
-        var containerClient = await blobServiceClient.getContainerClient(containerName);
-
-        var blobClient = await containerClient.getBlobClient(blobName);
-        var blockBlobClient = await blobClient.getBlockBlobClient();
-        var aborter = AbortController.timeout(10 * ONE_MINUTE);
-
         try {
-            await blockBlobClient.upload(blobImage.buffer, blobImage.size, aborter);
+            var blobImage = b64toBlob(base64Data, contentType);
 
-            //var content = "Hello";
-            //await blockBlobClient.upload(content, content.length, aborter);
-            context.done();
+            var blobServiceClient = await BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+            var containerClient = await blobServiceClient.getContainerClient(containerName);
+
+            var blobClient = await containerClient.getBlobClient(blobName);
+            var blockBlobClient = await blobClient.getBlockBlobClient();
+            var aborter = AbortController.timeout(10 * ONE_MINUTE);
+            await blockBlobClient.upload(blobImage.buffer, blobImage.size, aborter);
+            return storageUrl + '/' + containerName + '/' + blobName;
         }
         catch (e) {
-            context.log(e);
-            context.res = {
-                status: 500
-            };
-            context.done();
+            throw new Error(500);
         }
     }
-
-    function getFileSizeByBase64String(base64String) {
-        var y;
-        base64String.endsWith('==') ? y = 2 : y = 1;
-        var fileSize = (base64String.length * (3 / 4)) - y;
-        return fileSize;
-    }
-
 
 };
