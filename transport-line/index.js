@@ -5,6 +5,7 @@ let mongo_client = null;
 let cosmos_client = null;
 const connection_mongoDB = process.env["connection_mongoDB"];
 const connection_cosmosDB = process.env["connection_cosmosDB"];
+const  mongo_db_name = process.env["MONGO_BD_NAME"];
 
 module.exports = function (context, req) {
     //Create transport line
@@ -229,7 +230,7 @@ module.exports = function (context, req) {
     function searchSubsidiary(subsidiaryId) {
         return new Promise(function (resolve, reject) {
             mongo_client
-                .db('sssirsa')
+                .db(mongo_db_name)
                 .collection('subsidiaries')
                 .findOne({ _id: mongodb.ObjectId(subsidiaryId) },
                     function (error, docs) {
