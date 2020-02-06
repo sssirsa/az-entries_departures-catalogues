@@ -4,7 +4,7 @@ let entries_departures_client = null;
 
 const connection_EntriesDepartures = process.env["connection_EntriesDepartures"];
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-
+const ENTRIES_DEPARTURES_DB_NAME = process.env['ENTRIES_DEPARTURES_DB_NAME'];
 
 const STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const ONE_MINUTE = 60 * 1000;
@@ -249,7 +249,7 @@ module.exports = function (context, req) {
     function searchTransportLine(transportLineId) {
         return new Promise(function (resolve, reject) {
             entries_departures_client
-                .db('EntriesDepartures')
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .findOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
@@ -266,7 +266,7 @@ module.exports = function (context, req) {
         // Write the entry to the database.
         return new Promise(function (resolve, reject) {
             entries_departures_client
-                .db('EntriesDepartures')
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .insertOne(transportLine,
                     function (error, docs) {
@@ -282,7 +282,7 @@ module.exports = function (context, req) {
     function getTransportDriver(transportLineId) {
         return new Promise(function (resolve, reject) {
             entries_departures_client
-                .db('EntriesDepartures')
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .findOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
@@ -298,7 +298,7 @@ module.exports = function (context, req) {
     function getTransportDrivers(query) {
         return new Promise(function (resolve, reject) {
             entries_departures_client
-                .db('EntriesDepartures')
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .find(query)
                 .toArray(function (error, docs) {
@@ -313,7 +313,7 @@ module.exports = function (context, req) {
     function deleteTransportDriver(transportLineId) {
         return new Promise(function (resolve, reject) {
             entries_departures_client
-                .db('EntriesDepartures')
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .deleteOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {

@@ -6,6 +6,7 @@ let entries_departures_client = null;
 const connection_Management = process.env["connection_Management"];
 const connection_EntriesDepartures = process.env["connection_EntriesDepartures"];
 const MANAGEMENT_DB_NAME = process.env['MANAGEMENT_DB_NAME'];
+const ENTRIES_DEPARTURES_DB_NAME = process.env['ENTRIES_DEPARTURES_DB_NAME'];
 
 module.exports = function (context, req) {
     //Create transport line
