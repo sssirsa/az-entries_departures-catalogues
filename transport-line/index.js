@@ -1,11 +1,12 @@
 const mongodb = require('mongodb');
 
 //Mongodb connection
-let mongo_client = null;
-let cosmos_client = null;
-const connection_mongoDB = process.env["connection_mongoDB"];
-const connection_cosmosDB = process.env["connection_cosmosDB"];
-const  mongo_db_name = process.env["MONGO_BD_NAME"];
+let management_client = null;
+let entries_departures_client = null;
+const connection_Management = process.env["connection_Management"];
+const connection_EntriesDepartures = process.env["connection_EntriesDepartures"];
+const MANAGEMENT_DB_NAME = process.env['MANAGEMENT_DB_NAME'];
+const ENTRIES_DEPARTURES_DB_NAME = process.env['ENTRIES_DEPARTURES_DB_NAME'];
 
 module.exports = function (context, req) {
     //Create transport line
@@ -49,7 +50,7 @@ module.exports = function (context, req) {
                                             });
                                     })
                                     .catch(function (error) {
-                                        context.log('Error creating cosmos_client for transport line creation ');
+                                        context.log('Error creating entries_departures_client for transport line creation ');
                                         context.log(error);
                                         context.res = { status: 500, body: error };
                                         context.done();
@@ -75,7 +76,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating mongo_client for subsidiary search');
+                    context.log('Error creating management_client for subsidiary search');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -117,7 +118,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport line detail');
+                    context.log('Error creating entries_departures_client for transport line detail');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -145,7 +146,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport line list');
+                    context.log('Error creating entries_departures_client for transport line list');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -178,7 +179,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport line deletion');
+                    context.log('Error creating entries_departures_client for transport line deletion');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -195,12 +196,12 @@ module.exports = function (context, req) {
 
     function createMongoClient() {
         return new Promise(function (resolve, reject) {
-            if (!mongo_client) {
-                mongodb.MongoClient.connect(connection_mongoDB, function (error, _mongo_client) {
+            if (!management_client) {
+                mongodb.MongoClient.connect(connection_Management, function (error, _management_client) {
                     if (error) {
                         reject(error);
                     }
-                    mongo_client = _mongo_client;
+                    management_client = _management_client;
                     resolve();
                 });
             }
@@ -212,12 +213,12 @@ module.exports = function (context, req) {
 
     function createCosmosClient() {
         return new Promise(function (resolve, reject) {
-            if (!cosmos_client) {
-                mongodb.MongoClient.connect(connection_cosmosDB, function (error, _cosmos_client) {
+            if (!entries_departures_client) {
+                mongodb.MongoClient.connect(connection_EntriesDepartures, function (error, _entries_departures_client) {
                     if (error) {
                         reject(error);
                     }
-                    cosmos_client = _cosmos_client;
+                    entries_departures_client = _entries_departures_client;
                     resolve();
                 });
             }
@@ -229,8 +230,8 @@ module.exports = function (context, req) {
 
     function searchSubsidiary(subsidiaryId) {
         return new Promise(function (resolve, reject) {
-            mongo_client
-                .db(mongo_db_name)
+            management_client
+                .db(MANAGEMENT_DB_NAME)
                 .collection('subsidiaries')
                 .findOne({ _id: mongodb.ObjectId(subsidiaryId) },
                     function (error, docs) {
@@ -246,8 +247,8 @@ module.exports = function (context, req) {
     function writeTransportLine(transportLine) {
         // Write the entry to the database.
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .insertOne(transportLine,
                     function (error, docs) {
@@ -262,8 +263,8 @@ module.exports = function (context, req) {
 
     function getTransportLine(transportLineId) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .findOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
@@ -278,8 +279,8 @@ module.exports = function (context, req) {
 
     function getTransportLines(query) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .find(query)
                 .toArray(function (error, docs) {
@@ -293,8 +294,8 @@ module.exports = function (context, req) {
 
     function deleteTransportLine(transportLineId) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .deleteOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {

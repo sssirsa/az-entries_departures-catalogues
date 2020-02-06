@@ -1,10 +1,10 @@
 const mongodb = require('mongodb');
 
-let cosmos_client = null;
+let entries_departures_client = null;
 
-const connection_cosmosDB = process.env["connection_cosmosDB"];
+const connection_EntriesDepartures = process.env["connection_EntriesDepartures"];
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-
+const ENTRIES_DEPARTURES_DB_NAME = process.env['ENTRIES_DEPARTURES_DB_NAME'];
 
 const STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const ONE_MINUTE = 60 * 1000;
@@ -77,7 +77,7 @@ module.exports = function (context, req) {
                                             });
                                     })
                                     .catch(function (error) {
-                                        context.log('Error creating cosmos_client for transport driver creation');
+                                        context.log('Error creating entries_departures_client for transport driver creation');
                                         context.log(error);
                                         context.res = { status: 500, body: error };
                                         context.done();
@@ -103,7 +103,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport line search');
+                    context.log('Error creating entries_departures_client for transport line search');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -153,7 +153,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport driver detail');
+                    context.log('Error creating entries_departures_client for transport driver detail');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -181,7 +181,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport drivers list');
+                    context.log('Error creating entries_departures_client for transport drivers list');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -214,7 +214,7 @@ module.exports = function (context, req) {
                         });
                 })
                 .catch(function (error) {
-                    context.log('Error creating cosmos_client for transport driver deletion');
+                    context.log('Error creating entries_departures_client for transport driver deletion');
                     context.log(error);
                     context.res = { status: 500, body: error };
                     context.done();
@@ -231,12 +231,12 @@ module.exports = function (context, req) {
 
     function createCosmosClient() {
         return new Promise(function (resolve, reject) {
-            if (!cosmos_client) {
-                mongodb.MongoClient.connect(connection_cosmosDB, function (error, _cosmos_client) {
+            if (!entries_departures_client) {
+                mongodb.MongoClient.connect(connection_EntriesDepartures, function (error, _entries_departures_client) {
                     if (error) {
                         reject(error);
                     }
-                    cosmos_client = _cosmos_client;
+                    entries_departures_client = _entries_departures_client;
                     resolve();
                 });
             }
@@ -248,8 +248,8 @@ module.exports = function (context, req) {
 
     function searchTransportLine(transportLineId) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportLine')
                 .findOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
@@ -265,8 +265,8 @@ module.exports = function (context, req) {
     function writeTransportDriver(transportLine) {
         // Write the entry to the database.
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .insertOne(transportLine,
                     function (error, docs) {
@@ -281,8 +281,8 @@ module.exports = function (context, req) {
 
     function getTransportDriver(transportLineId) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .findOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
@@ -297,8 +297,8 @@ module.exports = function (context, req) {
 
     function getTransportDrivers(query) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .find(query)
                 .toArray(function (error, docs) {
@@ -312,8 +312,8 @@ module.exports = function (context, req) {
 
     function deleteTransportDriver(transportLineId) {
         return new Promise(function (resolve, reject) {
-            cosmos_client
-                .db('EntriesDepartures')
+            entries_departures_client
+                .db(ENTRIES_DEPARTURES_DB_NAME)
                 .collection('TransportDriver')
                 .deleteOne({ _id: mongodb.ObjectId(transportLineId) },
                     function (error, docs) {
