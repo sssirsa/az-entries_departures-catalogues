@@ -47,29 +47,30 @@ module.exports = function (context, req) {
                 if (req.query["udn"]) {
                     query['udn._id'] = mongodb.ObjectId(req.query["udn"]);
                 }
-                if (requestedID) {
-                    let transportLine = await getTransportLine(requestedID);
-                    context.res = {
-                        status: 200,
-                        body: transportLine,
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    };
-                    context.done();
-                }
-                else {
-                    let transportLines = await getTransportLines(query);
-                    context.res = {
-                        status: 200,
-                        body: transportLines,
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    };
-                    context.done();
-                }
             }
+            if (requestedID) {
+                let transportLine = await getTransportLine(requestedID);
+                context.res = {
+                    status: 200,
+                    body: transportLine,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                context.done();
+            }
+            else {
+                let transportLines = await getTransportLines(query);
+                context.res = {
+                    status: 200,
+                    body: transportLines,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                context.done();
+            }
+
         }
         catch (error) {
             if (error.status) {
@@ -176,7 +177,7 @@ module.exports = function (context, req) {
             let response = await writeTransportLine(newTransportLine);
 
             context.res = {
-                status: 200,
+                status: 201,
                 body: response.ops[0],
                 headers: {
                     "Content-Type": "application/json"
