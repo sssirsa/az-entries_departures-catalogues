@@ -383,7 +383,13 @@ module.exports = function (context, req) {
                     .insertOne(transportLine,
                         function (error, docs) {
                             if (error) {
-                                reject(error);
+                                reject({
+                                    status: 500,
+                                    body: error.toString(),
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    }
+                                });
                             }
                             resolve(docs);
                         }

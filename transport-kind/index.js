@@ -242,7 +242,13 @@ module.exports = function (context, req) {
                     .insertOne(transportKind,
                         function (error, docs) {
                             if (error) {
-                                reject(error);
+                                reject({
+                                status: 500,
+                                body: error.toString(),
+                                headers: {
+                                    "Content-Type": "application/json"
+                                }
+                            });
                             }
                             resolve(docs);
                         }
